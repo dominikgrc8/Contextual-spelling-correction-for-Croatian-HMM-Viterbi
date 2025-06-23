@@ -1,0 +1,33 @@
+body {
+    background-color: #f5f5f5;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+ input[type="text"] {
+      width: 80%;          /* Make it wider */
+      font-size: 1.2em;    /* Make text bigger */
+      padding: 10px;       /* Add spacing inside */
+      margin-bottom: 10px;
+    }
+
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.incorrect {
+  color: red;
+  font-weight: bold;
+}
+
+.corrected {
+  color: green;
+  font-weight: bold;
+}
+
+.segment-block {
+  margin-bottom: 1em;
+  text-align: left;
+  display: inline-block;
+}

@@ -1,0 +1,32 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html>
+<head>
+  <title>HMM i Viterbi</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>HMM i Viterbi</h1>
+  <form method="POST">
+    <input type="text" name="user_input" placeholder="Type here..." required>
+    <button type="submit">Pošalji</button>
+    <br><br>
+    <label>
+      <input type="checkbox" name="mode_switch">
+      Uključi dodatne informacije
+    </label>
+  </form>
+  {% if user_input %}
+  <p><strong>Upisano:</strong> {{ user_input }}</p>
+  {% endif %}
+  {% if output %}
+    <pre>{{ output | safe }}</pre>
+  {% endif %}
+   {% if message %}
+    <pre>{{ message }}</pre>
+  {% endif %}
+  {% if timing %}
+    <pre>{{ timing | safe }}</pre>
+  {% endif %}
+</body>
+</html>
