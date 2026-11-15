@@ -25,7 +25,7 @@ def index():
         file_content = ""
         message = "Greška: Datoteka nije pronađena."
 
-    
+
     if request.method == 'POST':
         user_input = request.form['user_input']
         mode_on = 'mode_switch' in request.form
@@ -43,7 +43,7 @@ def index():
         start4 = time.perf_counter()
         corrected_list = viterbi2(segments, corr_dict2, transitions)
         end4 = time.perf_counter()
-        
+
 
         if mode_on:
             message = f"{print_dict_list(corr_dict2)}\n\n\n{print_nested_dict(transitions)}"
@@ -56,7 +56,7 @@ def index():
             timing += f'Ukupno računanje tranzicijskih vjerojatnosti: {end3-start3}\n'
             timing += f'Viterbi algoritam: {end4-start4}\n'
         output = pair_lists_to_highlighted_html(segments, corrected_list, corr_dict2)
-        
+
 
     return render_template('index.html', message=message, user_input=user_input, output=output, timing=timing)
 
@@ -110,7 +110,7 @@ def fetch_ngram_data(ngram):
                 }
     except requests.exceptions.RequestException as e:
         return {"error": "Greška u zahtevu", "details": str(e)} #timeout, connection error...
-    
+
 def generate_edit_distance_1(word):
     letters = string.ascii_lowercase + "čćžšđ"
     edits = set()
@@ -140,7 +140,7 @@ def generate_edit_distance_1(word):
             edits.add(left + c + right)
 
     return edits
-    
+
 def find_sus_by_segments(segments, word_map):
     sus_by_segments = []
     for segment in segments:
@@ -163,7 +163,7 @@ def find_sus_by_segments(segments, word_map):
                     data = fetch_ngram_data(bigram)
                     if data and (data.get("count", 0) == None or int(data.get("count", 0)) < 50):
                         element.append(bigram.split()[1])
-                
+
         sus_by_segments.append(element)
     return(sus_by_segments, end-start)
 
@@ -206,7 +206,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                 sus = None
                 if word in sus_by_segments[index]:
                     sus = word
-                    
+
                     letter_corrections = None
                     if sus in word_map:
                         if sus in word_map[sus]:
@@ -214,7 +214,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                             recommendations.remove(sus)
                         else:
                             recommendations = word_map[sus]
-                    
+
                     else:
                         if any(char in sus for char in problematic):
                             letter_corrections = generate_letter_alternatives(problematic, sus)
@@ -232,7 +232,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                                 else:
                                     data = fetch_ngram_data(f'{w} {words[i+1]}')
                                     count = 0 if data.get("count", 0) is None else int(data.get("count", 0))
-                                    
+
                                 if count:
                                     recommendations.append(w)
                         if len(recommendations) < 2:
@@ -248,7 +248,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                                     else:
                                         data = fetch_ngram_data(f'{w} {words[i+1]}')
                                         count = 0 if data.get("count", 0) is None else int(data.get("count", 0))
-                                        
+
                                     if count:
                                         recommendations.append(w)
 
@@ -257,7 +257,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                 else:
                     if sus in word_map:
                         recommendations = word_map[sus]
-                            
+
                 for item in recommendations:
                     if item not in corrections_dict[word]:
                         corrections_dict[word].append(item)
@@ -330,7 +330,7 @@ def viterbi2(segments, correction_dict, transitions):
 
                 for prev_word in prev_candidates:
                     trans_prob = transitions.get((prev_word, curr_word), 1e-6)
-                    prob = V[t-1][prev_word] + math.log(trans_prob + 1e-12) 
+                    prob = V[t-1][prev_word] + math.log(trans_prob + 1e-12)
 
                     if prob > max_prob:
                         max_prob = prob
