@@ -60,7 +60,7 @@ def index():
 
 
         if mode_on:
-            message = f"{print_dict_list(corr_dict2)}\n\n\n{print_nested_dict(transitions)}"
+            message = f"{print_corrections(segments, corr_dict2)}\n\n\n{print_nested_dict(transitions)}"
             timing += f'Time\n'
             timing += f'Tokenizacija: {end1-start1}\n'
             timing += f'Detekcija sumnjivih riječi (API dohvat frekvencija): {end5-start5}\n'
@@ -156,25 +156,24 @@ def generate_edit_distance_1(word):
     return edits
 
 def find_sus_by_segments(segments, word_map):
+    # Returns, for each segment, the set of word positions that look suspicious.
     sus_by_segments = []
     for segment in segments:
-        element = []
-        i = segments.index(segment)
-        for word in segment.split():
+        element = set()
+        words = segment.split()
+        for i, word in enumerate(words):
             data = fetch_ngram_data(word)
             if data and (data.get("count", 0) == None or int(data.get("count", 0)) < 100):
-                element.append(word)
+                element.add(i)
             else:
                 if word in word_map:
-                    element.append(word)
-        words = segment.split()
+                    element.add(i)
         if len(words) >= 2:
             for i in range(len(words) - 1):
-                bigram = words[i] + ' ' + words[i + 1]
-                if bigram.split()[1] not in element and bigram.split()[0] not in element:
-                    data = fetch_ngram_data(bigram)
+                if i not in element and i + 1 not in element:
+                    data = fetch_ngram_data(words[i] + ' ' + words[i + 1])
                     if data and (data.get("count", 0) == None or int(data.get("count", 0)) < 50):
-                        element.append(bigram.split()[1])
+                        element.add(i + 1)
 
         sus_by_segments.append(element)
     return sus_by_segments
@@ -204,19 +203,20 @@ def generate_letter_alternatives(letters, word):
 
 
 def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_map, korpus):
-    corrections_dict = {}
+    # corrections[s][i] is the list of candidates for word i of segment s; the original word is always first.
+    corrections = []
     problematic = "ćčc"
     problematic_capital = "ĆČC"
-    for segment in segments:
-        index = segments.index(segment)
+    best = 0
+    for index, segment in enumerate(segments):
         words = segment.split()
+        segment_corrections = [[word] for word in words]
+        corrections.append(segment_corrections)
         if len(words) > 1:
-            best = 0
-            for word in words:
+            for i, word in enumerate(words):
                 start = time.perf_counter()
                 recommendations = []
-                corrections_dict[word] = [word]
-                if word in sus_by_segments[index]:
+                if i in sus_by_segments[index]:
                     sus = word
 
                     if sus in word_map:
@@ -230,8 +230,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                         distance1 = generate_edit_distance_1(sus)
                         for w in distance1:
                             if w.upper() in korpus:
-                                i = words.index(word)
-                                if i != 0 and words[i-1] not in sus_by_segments[index]:
+                                if i != 0 and i - 1 not in sus_by_segments[index]:
                                     data = fetch_ngram_data(f'{words[i-1]} {w}')
                                     count = 0 if data.get("count", 0) is None else int(data.get("count", 0))
                                 else:
@@ -246,7 +245,6 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                                 distance2.extend(generate_edit_distance_1(e1))
                             for w in distance2:
                                 if w.upper() in korpus:
-                                    i = words.index(word)
                                     if i != 0:
                                         data = fetch_ngram_data(f'{words[i-1]} {w}')
                                         count = 0 if data.get("count", 0) is None else int(data.get("count", 0))
@@ -258,26 +256,26 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                                         recommendations.append(w)
 
                 for item in recommendations:
-                    if item not in corrections_dict[word]:
-                        corrections_dict[word].append(item)
+                    if item not in segment_corrections[i]:
+                        segment_corrections[i].append(item)
                 end = time.perf_counter()
                 timing = end-start
                 if timing >= best:
                     best = timing
-    return corrections_dict, best
+    return corrections, best
 
 
-def transition_matrix2(segments, correction_dict):
+def transition_matrix2(segments, corrections):
     transitions = {}
     best = 0
-    for segment in segments:
+    for index, segment in enumerate(segments):
         start = time.perf_counter()
         words = segment.split()
         n = len(words)
 
         for i in range(1, n):
-            prev_word_candidates = correction_dict.get(words[i-1], [words[i-1]])
-            curr_word_candidates = correction_dict.get(words[i], [words[i]])
+            prev_word_candidates = corrections[index][i-1]
+            curr_word_candidates = corrections[index][i]
 
             for prev_word in prev_word_candidates:
                 for curr_word in curr_word_candidates:
@@ -300,10 +298,10 @@ def transition_matrix2(segments, correction_dict):
     return transitions, best
 
 
-def viterbi2(segments, correction_dict, transitions):
+def viterbi2(segments, corrections, transitions):
     result_list = []
 
-    for segment in segments:
+    for index, segment in enumerate(segments):
         words = segment.split()
         n = len(words)
 
@@ -313,14 +311,14 @@ def viterbi2(segments, correction_dict, transitions):
             V.append({})
             backpointer.append({})
 
-        first_candidates = correction_dict.get(words[0], [words[0]])
+        first_candidates = corrections[index][0]
         for w in first_candidates:
             V[0][w] = 1e-12
             backpointer[0][w] = None
 
         # Recursion
         for t in range(1, n):
-            curr_candidates = correction_dict.get(words[t], [words[t]])
+            curr_candidates = corrections[index][t]
             prev_candidates = V[t-1].keys()
 
             for curr_word in curr_candidates:
@@ -355,16 +353,14 @@ def viterbi2(segments, correction_dict, transitions):
 
     return result_list
 
-def print_dict_list(data):
+def print_corrections(segments, corrections):
     output = ""
-    for key, values in data.items():
-        output += f"{key}:\n"
-        if isinstance(values, (list, set, tuple)):
-            for value in values:
+    for segment, segment_corrections in zip(segments, corrections):
+        for word, candidates in zip(segment.split(), segment_corrections):
+            output += f"{word}:\n"
+            for value in candidates:
                 output += f"{value}\n"
-        else:
-            output += f"{values}\n"
-        output += "\n\n"
+            output += "\n\n"
     return output
 
 def print_nested_dict(nested_dict):
@@ -380,16 +376,16 @@ def print_nested_dict(nested_dict):
     return output
 
 
-def pair_lists_to_highlighted_html(original_list, corrected_list, corrections_dict):
+def pair_lists_to_highlighted_html(original_list, corrected_list, corrections):
     html_output = ""
 
-    for segment, corrected_words in zip(original_list, corrected_list):
+    for segment, corrected_words, segment_corrections in zip(original_list, corrected_list, corrections):
         original_words = segment.split()
         original_line = ""
         corrected_line = ""
 
-        for orig_word, corr_word in zip(original_words, corrected_words):
-            if orig_word in corrections_dict and len(corrections_dict[orig_word]) > 1:
+        for orig_word, corr_word, candidates in zip(original_words, corrected_words, segment_corrections):
+            if len(candidates) > 1:
                 original_line += f'<span class="incorrect">{escape(orig_word)}</span> '
                 corrected_line += f'<span class="corrected">{escape(corr_word)}</span> '
             else:
