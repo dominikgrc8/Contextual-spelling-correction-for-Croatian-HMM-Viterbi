@@ -1,6 +1,7 @@
 import itertools
 import math
 import string
+from functools import lru_cache
 from flask import Flask, render_template, request
 from markupsafe import Markup, escape
 import re
@@ -9,6 +10,8 @@ import time
 import json
 
 app = Flask(__name__)
+
+API_TIMEOUT = 5  # seconds
 
 @app.route("/", methods=['GET', 'POST'])
 def index():
@@ -92,23 +95,23 @@ def tokenize(text):
 
     return ngrams, cleaned
 
-def fetch_ngram_data(ngram):
-    ngram_for_send = {
-        "ngram": ngram
-    }
+
+@lru_cache(maxsize=100_000)
+def _fetch_ngram_data_cached(ngram):
+    # Raises on any failure; lru_cache does not store exceptions, so only successful responses are cached.
     url = "https://ispravi.me/api/ngram"
+    response = requests.post(url, data={"ngram": ngram}, timeout=API_TIMEOUT)
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_ngram_data(ngram):
     try:
-        response = requests.post(url, ngram_for_send)
-        if response.status_code == 200:
-            try:
-                return response.json()
-            except ValueError:
-                return {"Odgovor nije validan JSON"}
-        else:
-            return {
-                    "error": f"Server vratio status {response.status_code}",
-                    "details": response.text
-                }
+        return _fetch_ngram_data_cached(ngram)
+    except requests.exceptions.HTTPError as e:
+        return {"error": f"Server vratio status {e.response.status_code}", "details": e.response.text}
+    except ValueError:
+        return {"error": "Odgovor nije validan JSON"}
     except requests.exceptions.RequestException as e:
         return {"error": "Greška u zahtevu", "details": str(e)} #timeout, connection error...
 
