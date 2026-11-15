@@ -45,7 +45,9 @@ def index():
         start1 = time.perf_counter()
         ngrams, segments = tokenize(user_input)
         end1 = time.perf_counter()
-        sus_by_segments, fetch_time = find_sus_by_segments(segments, WORD_MAP)
+        start5 = time.perf_counter()
+        sus_by_segments = find_sus_by_segments(segments, WORD_MAP)
+        end5 = time.perf_counter()
         start2 = time.perf_counter()
         corr_dict2, generating_time = generate_corrections_with_korpus_only_sus(segments, sus_by_segments, WORD_MAP, KORPUS)
         end2 = time.perf_counter()
@@ -61,7 +63,7 @@ def index():
             message = f"{print_dict_list(corr_dict2)}\n\n\n{print_nested_dict(transitions)}"
             timing += f'Time\n'
             timing += f'Tokenizacija: {end1-start1}\n'
-            timing += f'API dohvat frekvencija: {fetch_time}\n'
+            timing += f'Detekcija sumnjivih riječi (API dohvat frekvencija): {end5-start5}\n'
             timing += f'Najdulje vrijeme generiranja za jednu riječ: {generating_time}\n'
             timing += f'Ukupno vrijeme generiranja: {end2-start2}\n'
             timing += f'Najdulje računanje tranzicija za jedan segment: {transitions_time}\n'
@@ -159,9 +161,7 @@ def find_sus_by_segments(segments, word_map):
         element = []
         i = segments.index(segment)
         for word in segment.split():
-            start = time.perf_counter()
             data = fetch_ngram_data(word)
-            end = time.perf_counter()
             if data and (data.get("count", 0) == None or int(data.get("count", 0)) < 100):
                 element.append(word)
             else:
@@ -177,7 +177,7 @@ def find_sus_by_segments(segments, word_map):
                         element.append(bigram.split()[1])
 
         sus_by_segments.append(element)
-    return(sus_by_segments, end-start)
+    return sus_by_segments
 
 
 def generate_letter_alternatives(letters, word):
@@ -304,7 +304,7 @@ def transition_matrix2(segments, correction_dict):
         if timing >= best:
             best = timing
 
-    return transitions, timing
+    return transitions, best
 
 
 def viterbi2(segments, correction_dict, transitions):
