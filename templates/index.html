@@ -7,6 +7,9 @@
 </head>
 <body>
   <h1>HMM i Viterbi</h1>
+  {% if warning %}
+    <p><strong>{{ warning }}</strong></p>
+  {% endif %}
   <form method="POST">
     <input type="text" name="user_input" placeholder="Type here..." required>
     <button type="submit">Pošalji</button>

@@ -13,22 +13,30 @@ app = Flask(__name__)
 
 API_TIMEOUT = 5  # seconds
 
+
+def load_resources():
+    with open("static/word_map.json", "r", encoding="utf-8") as f:
+        word_map = json.load(f)
+
+    warning = None
+    try:
+        with open("static/types.lang.utf8", "r", encoding="utf-8") as f:
+            korpus = set(word.strip() for word in f if word.strip())
+    except FileNotFoundError:
+        korpus = set()
+        warning = "Upozorenje: static/types.lang.utf8 nije pronađen, kandidati po udaljenosti uređivanja su isključeni."
+    return word_map, korpus, warning
+
+
+WORD_MAP, KORPUS, KORPUS_WARNING = load_resources()
+
+
 @app.route("/", methods=['GET', 'POST'])
 def index():
     message = None
     user_input = None
     output = None
     timing = f''
-    with open("static/word_map.json", "r", encoding="utf-8") as f:
-        word_map = json.load(f)
-
-    try:
-        with open("static/types.lang.utf8", "r", encoding="utf-8") as f:
-            korpus = set(word.strip() for word in f if word.strip())
-    except FileNotFoundError:
-        file_content = ""
-        message = "Greška: Datoteka nije pronađena."
-
 
     if request.method == 'POST':
         user_input = request.form['user_input']
@@ -37,9 +45,9 @@ def index():
         start1 = time.perf_counter()
         ngrams, segments = tokenize(user_input)
         end1 = time.perf_counter()
-        sus_by_segments, fetch_time = find_sus_by_segments(segments, word_map)
+        sus_by_segments, fetch_time = find_sus_by_segments(segments, WORD_MAP)
         start2 = time.perf_counter()
-        corr_dict2, generating_time = generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_map, korpus)
+        corr_dict2, generating_time = generate_corrections_with_korpus_only_sus(segments, sus_by_segments, WORD_MAP, KORPUS)
         end2 = time.perf_counter()
         start3 = time.perf_counter()
         transitions, transitions_time = transition_matrix2(segments, corr_dict2)
@@ -62,7 +70,7 @@ def index():
         output = pair_lists_to_highlighted_html(segments, corrected_list, corr_dict2)
 
 
-    return render_template('index.html', message=message, user_input=user_input, output=output, timing=timing)
+    return render_template('index.html', message=message, user_input=user_input, output=output, timing=timing, warning=KORPUS_WARNING)
 
 
 def tokenize(text):
