@@ -2,6 +2,7 @@ import itertools
 import math
 import string
 from flask import Flask, render_template, request
+from markupsafe import Markup, escape
 import re
 import requests
 import time
@@ -391,18 +392,19 @@ def pair_lists_to_highlighted_html(original_list, corrected_list, corrections_di
 
         for orig_word, corr_word in zip(original_words, corrected_words):
             if orig_word in corrections_dict and len(corrections_dict[orig_word]) > 1:
-                original_line += f'<span class="incorrect">{orig_word}</span> '
-                corrected_line += f'<span class="corrected">{corr_word}</span> '
+                original_line += f'<span class="incorrect">{escape(orig_word)}</span> '
+                corrected_line += f'<span class="corrected">{escape(corr_word)}</span> '
             else:
-                original_line += f'{orig_word} '
-                corrected_line += f'{corr_word} '
+                original_line += f'{escape(orig_word)} '
+                corrected_line += f'{escape(corr_word)} '
 
         html_output += f"<div class='segment-block'>"
         html_output += f"<div><strong>Originalno:</strong> {original_line.strip()}</div>"
         html_output += f"<div><strong>Ispravljeno:</strong> {corrected_line.strip()}</div>"
         html_output += f"</div><br>"
 
-    return html_output.strip()
+    # Every user-supplied word above went through escape(), so the result is safe to render as HTML.
+    return Markup(html_output.strip())
 
 
 if __name__ == "__main__":
