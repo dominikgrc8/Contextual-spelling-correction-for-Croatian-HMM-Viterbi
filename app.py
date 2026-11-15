@@ -80,7 +80,7 @@ def tokenize(text):
     segments = re.split(r'[.,:;!?()"\n]+', text)
     cleaned = []
     for segment in segments:
-        if segment:
+        if segment.strip():
             cleaned.append(segment.strip())
 
     for i in range(len(cleaned)):
