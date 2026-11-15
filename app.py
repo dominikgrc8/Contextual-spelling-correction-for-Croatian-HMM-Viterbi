@@ -195,7 +195,8 @@ def generate_letter_alternatives(letters, word):
         new_word = ''.join(combo)
 
         data = fetch_ngram_data(new_word)
-        if data and (data.get("count", 0) != None or (0 if data.get("count", 0) is None else int(data.get("count", 0))) > 50):
+        count = data.get("count")
+        if count is not None and int(count) > 50:
             final.append(new_word)
 
     return final
