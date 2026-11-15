@@ -1,0 +1,10 @@
+# Croatian word list used for candidate filtering; not redistributed in this repository
+static/types.lang.utf8
+# Thesis submission archive (contains the word list above)
+Att_0036549646_73.zip
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
