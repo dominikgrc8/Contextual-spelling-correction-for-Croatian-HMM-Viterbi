@@ -8,3 +8,8 @@ __pycache__/
 .venv/
 venv/
 .env
+
+# Thesis PDF: published in the FER repository, linked from the README instead
+gracner_dominik_fer_2025_predd_sveuc.pdf
+# Third-party figure used in the thesis, not redistributable
+Figures/HMM.png
