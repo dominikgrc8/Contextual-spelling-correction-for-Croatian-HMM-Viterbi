@@ -221,11 +221,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
 
                     letter_corrections = None
                     if sus in word_map:
-                        if sus in word_map[sus]:
-                            recommendations = word_map[sus]
-                            recommendations.remove(sus)
-                        else:
-                            recommendations = word_map[sus]
+                        recommendations = [w for w in word_map[sus] if w != sus]
 
                     else:
                         if any(char in sus for char in problematic):
