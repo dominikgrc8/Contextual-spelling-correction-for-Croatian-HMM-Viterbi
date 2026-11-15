@@ -216,7 +216,6 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                 start = time.perf_counter()
                 recommendations = []
                 corrections_dict[word] = [word]
-                sus = None
                 if word in sus_by_segments[index]:
                     sus = word
 
@@ -257,12 +256,6 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
 
                                     if count:
                                         recommendations.append(w)
-
-
-
-                else:
-                    if sus in word_map:
-                        recommendations = word_map[sus]
 
                 for item in recommendations:
                     if item not in corrections_dict[word]:
