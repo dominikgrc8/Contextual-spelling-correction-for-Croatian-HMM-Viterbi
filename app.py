@@ -206,7 +206,7 @@ def generate_letter_alternatives(letters, word):
 def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_map, korpus):
     corrections_dict = {}
     problematic = "ćčc"
-    problemati_capital = "ČĆC"
+    problematic_capital = "ĆČC"
     for segment in segments:
         index = segments.index(segment)
         words = segment.split()
@@ -220,17 +220,14 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                 if word in sus_by_segments[index]:
                     sus = word
 
-                    letter_corrections = None
                     if sus in word_map:
                         recommendations = [w for w in word_map[sus] if w != sus]
 
                     else:
                         if any(char in sus for char in problematic):
-                            letter_corrections = generate_letter_alternatives(problematic, sus)
-                            corrections_dict[sus].extend(letter_corrections)
-                        if any(char in sus for char in problemati_capital):
-                            letter_corrections = generate_letter_alternatives(problematic, sus)
-                            corrections_dict[sus].extend(letter_corrections)
+                            recommendations.extend(generate_letter_alternatives(problematic, sus))
+                        if any(char in sus for char in problematic_capital):
+                            recommendations.extend(generate_letter_alternatives(problematic_capital, sus))
                         distance1 = generate_edit_distance_1(sus)
                         for w in distance1:
                             if w.upper() in korpus:
