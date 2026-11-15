@@ -201,6 +201,15 @@ def generate_letter_alternatives(letters, word):
     return final
 
 
+def context_count(words, i, w, sus_positions):
+    # Count of candidate w together with a neighbour: the left one if it is trusted,
+    # otherwise the right one, falling back to the left one when w is the last word.
+    if i != 0 and (i - 1 not in sus_positions or i + 1 >= len(words)):
+        data = fetch_ngram_data(f'{words[i-1]} {w}')
+    else:
+        data = fetch_ngram_data(f'{w} {words[i+1]}')
+    return 0 if data.get("count", 0) is None else int(data.get("count", 0))
+
 
 def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_map, korpus):
     # corrections[s][i] is the list of candidates for word i of segment s; the original word is always first.
@@ -230,14 +239,7 @@ def generate_corrections_with_korpus_only_sus(segments, sus_by_segments, word_ma
                         distance1 = generate_edit_distance_1(sus)
                         for w in distance1:
                             if w.upper() in korpus:
-                                if i != 0 and i - 1 not in sus_by_segments[index]:
-                                    data = fetch_ngram_data(f'{words[i-1]} {w}')
-                                    count = 0 if data.get("count", 0) is None else int(data.get("count", 0))
-                                else:
-                                    data = fetch_ngram_data(f'{w} {words[i+1]}')
-                                    count = 0 if data.get("count", 0) is None else int(data.get("count", 0))
-
-                                if count:
+                                if context_count(words, i, w, sus_by_segments[index]):
                                     recommendations.append(w)
                         if len(recommendations) < 2:
                             distance2 = []
