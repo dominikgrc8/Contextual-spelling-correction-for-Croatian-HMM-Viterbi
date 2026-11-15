@@ -405,9 +405,5 @@ def pair_lists_to_highlighted_html(original_list, corrected_list, corrections_di
     return html_output.strip()
 
 
-
-
-
-
-
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run()
